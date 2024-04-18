@@ -1,0 +1,506 @@
+---
+title: "Untitled"
+author: "Joao Frutuoso"
+date: "2024-04-15"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r}
+
+rm(list = ls())
+
+
+library(readxl)
+eICU_apache <- read_excel("eICU_apache.xlsx")
+View(eICU_apache)
+```
+
+```{r}
+# Load libraries (if needed)
+library(dplyr)
+library(Hmisc)
+
+# Get basic information about the data
+str(eICU_apache)
+
+# Check for missing values in each variable
+summary(eICU_apache)
+
+# Separate numeric and categorical variables
+numeric_data <- eICU_apache %>%
+  select_if(is.numeric)  # Select numeric columns
+
+categorical_data <- eICU_apache %>%
+  select_if(is.factor)  # Select categorical (factor) columns
+
+# Describe numeric variables
+describe(numeric_data)  # Provides detailed statistics
+
+# Analyze categorical variables
+sapply(categorical_data, table)  # Create frequency tables
+
+# Explore distributions (consider using ggplot2 for more customization)
+numeric_data %>%
+  lapply(hist)  # Histograms for numeric variables
+```
+
+```{r}
+
+# Create frequency tables for categorical variables
+# Describe numeric variables
+describe(eICU_apache[, sapply(eICU_apache, is.numeric)])
+
+# Create frequency tables for categorical variables
+sapply(eICU_apache[, sapply(eICU_apache, is.factor)], table)
+
+
+
+
+```
+
+```{r}
+library(dplyr)
+library(caret)
+library(randomForest)
+library(tidyr)
+```
+
+```{r}
+# Load the caret package
+library(caret)
+
+# Set the seed for reproducibility
+set.seed(123)
+
+# Split the dataset into training and testing sets
+indices <- createDataPartition(eICU_apache$icu_los_days, p = 0.9, list = FALSE)
+train_data <- eICU_apache[indices, ]
+test_data <- eICU_apache[-indices, ]
+```
+
+```{r}
+# Fit a linear regression model using the training data
+model <- lm(icu_los_days ~ ., data = train_data)
+
+# Print a summary of the model
+summary(model)
+```
+
+```{r}
+# Load the randomForest package
+library(randomForest)
+train_data <- na.omit(train_data)
+test_data <- na.omit(test_data)
+
+# Fit a random forest model using the training data
+model <- randomForest(icu_los_days ~ ., data = train_data)
+
+# Print a summary of the model
+print(model)
+
+# Make predictions on the test data
+predictions <- predict(model, newdata = test_data)
+
+# Calculate the mean squared error
+mse <- mean((test_data$icu_los_days - predictions)^2)
+print(paste("Mean Squared Error:", mse))
+```
+
+```{r}
+# Make predictions on the test data using the random forest model
+# Extract model summary metrics
+trees <- 500
+variables_tried <- 11
+mean_squared_residuals <- 34.33214
+variance_explained <- 8.67
+mse <- 33.7335753386739
+
+# Create a data frame for plotting
+summary_data <- data.frame(Metric = c("Number of Trees", "Variables Tried", "Mean Squared Residuals", "Variance Explained", "Test MSE"),
+                           Value = c(trees, variables_tried, mean_squared_residuals, variance_explained, mse))
+
+# Plot the summary metrics
+barplot(summary_data$Value, names.arg = summary_data$Metric, 
+        main = "Random Forest Model Summary",
+        ylab = "Value", col = "skyblue", border = "black")
+```
+
+```{r}
+# Assuming predictions are stored in the 'predictions' object
+# Calculate absolute deviations from actual values in test_data
+absolute_deviations <- abs(test_data$icu_los_days - predictions)
+
+# Calculate the threshold for 150% deviation based on MSE
+threshold <- 1.2 * sqrt(mse)  # Assuming mse is the test MSE from previous code
+
+# Find indices of cases exceeding the threshold
+outlier_indices <- which(absolute_deviations > threshold)
+
+# Subset test data and predictions for outliers
+outlier_data <- test_data[outlier_indices,]
+outlier_predictions <- predictions[outlier_indices]
+
+# Create a data frame for the table
+outlier_table <- data.frame(
+  Actual_ICU_Stay = outlier_data$icu_los_days,
+  Predicted_ICU_Stay = outlier_predictions,
+  Absolute_Deviation = absolute_deviations[outlier_indices]
+)
+
+# Print the caption before the table
+cat("Cases with ICU Stay Deviating 120% from Predictions\n")
+
+# Print the table with row.names set to FALSE
+print(outlier_table, row.names = FALSE)
+
+```
+
+```{r}
+# ... (rest of the code calculating deviations and outliers)
+
+# Filter test data for outliers
+outlier_data <- test_data[outlier_indices,]
+
+# Print summary statistics for all features in outlier data
+summary(outlier_data)
+
+# Explore specific features of interest (optional)
+
+# Ensure 'icu_los_days' exists in your data before plotting
+if (is.numeric(outlier_data[, "icu_los_days"])) {
+  hist(outlier_data$icu_los_days, main = "Distribution of icu_los_days in Outliers")
+  boxplot(outlier_data$icu_los_days, main = "Boxplot of icu_los_days in Outliers")
+} else {
+  print("Warning: 'icu_los_days' not found in outlier data or not numeric.")
+}
+
+```
+```{r}
+icu_los_days <- "icu_los_days"  # Replace with actual feature name
+
+# Create histograms
+hist(outlier_data[, icu_los_days], main = "Distribution in Outliers", breaks = 20, col = "skyblue")
+hist(test_data[, icu_los_days], main = "Distribution in Entire Test Set", breaks = 20, col = "lightgreen")
+legend("topright", legend = c("Outliers", "Test Set"), fill = c("skyblue", "lightgreen"))
+```
+
+
+```{r}
+# Install kableExtra package if not already installed
+if (!require(kableExtra)) install.packages("kableExtra")
+```
+
+
+```{r}
+library(kableExtra)
+
+# Assuming outlier_data is available
+# Create a caption for the table
+table_caption <- "Cases with ICU Stay Deviating 120% from Predictions"
+
+# Create the table using kableExtra with desired formatting options
+outlier_table <- kableExtra::kable(outlier_data, caption = table_caption, booktabs = TRUE, row.names = FALSE, 
+                                 align = "c") %>%  # Center-align content
+                                 kable_styling(full_width = F, # Adjust table width
+                                               font_size = 10)   # Adjust font size
+
+# Print the formatted table
+cat(outlier_table)
+print("outlier_table")
+
+```
+
+
+```{r}
+# Find indices of cases exceeding the threshold
+outlier_indices <- which(absolute_deviations > threshold)
+
+# Subset test data and predictions for outliers
+outlier_data <- test_data[outlier_indices,]
+outlier_predictions <- predictions[outlier_indices]
+
+# Separate outliers into two groups: higher predicted ICU LOS and lower predicted ICU LOS
+higher_predicted <- outlier_data[outlier_predictions > outlier_data$icu_los_days, ]
+lower_predicted <- outlier_data[outlier_predictions < outlier_data$icu_los_days, ]
+
+# Compare characteristics of the two groups with the test data
+summary(higher_predicted)
+summary(lower_predicted)
+summary(test_data)
+
+# Optionally, visualize any significant differences between the groups using plots
+# For example, you can create histograms or boxplots for numeric variables and compare distributions
+# You can also use barplots for categorical variables to compare frequencies
+
+# For instance, to compare the distribution of age between the groups:
+hist(higher_predicted$age, main = "Age Distribution - Higher Predicted ICU LOS", xlab = "Age")
+hist(lower_predicted$age, main = "Age Distribution - Lower Predicted ICU LOS", xlab = "Age")
+hist(test_data$age, main = "Age Distribution - Test Data", xlab = "Age")
+legend("topright", legend = c("Higher Predicted ICU LOS", "Lower Predicted ICU LOS", "Test Data"), fill = c("red", "blue", "green"))
+```
+`
+
+
+```{r}
+
+# Train random forest model with hyperparameter tuning
+# Define a grid of hyperparameters to search
+param_grid <- expand.grid(
+  ntree = c(500, 1000),
+  mtry = c(floor(sqrt(ncol(train_data))), floor(ncol(train_data)/3))
+)
+
+# Create control object for k-fold cross-validation
+control <- trainControl(method = "repeatedcv", number = 10)
+
+
+if (sum(is.na(eICU_apache$icu_los_days)) == nrow(eICU_apache)) {
+  cat("icu_los_days column is empty. Consider including rows with missing values or adjusting data cleaning steps.")
+} else {
+  # Check for missing values in icu_los_days
+  sum(is.na(eICU_apache$icu_los_days))
+}
+
+```
+
+```{r}
+library(dplyr)      # Para manipulação de dados
+library(purrr)      # Para mapas
+library(broom)      # Para limpar os resultados do teste
+```
+
+
+```{r}
+str(outlier_data)
+str(test_data)
+```
+
+
+```{r}
+# Realizar o teste de Mann-Whitney U para a variável 'age'
+wilcox.test(outlier_data$age, test_data$age)
+
+# Realizar o teste de Mann-Whitney U para a variável 'icu_los_days'
+wilcox.test(outlier_data$icu_los_days, test_data$icu_los_days)
+
+# Realizar o teste de Mann-Whitney U para a variável 'elective_surgery'
+wilcox.test(outlier_data$elective_surgery, test_data$elective_surgery)
+
+
+# Realizar o teste de Mann-Whitney U para a variável 'gender'
+wilcox.test(outlier_data$gender, test_data$gender)
+
+
+# Realizar o teste de Mann-Whitney U para a variável 'icu_los_days'
+wilcox.test(outlier_data$icu_los_days, test_data$icu_los_days)
+
+# Realizar o teste de Mann-Whitney U para a variável 'pre_icu_los_days'
+wilcox.test(outlier_data$pre_icu_los_days, test_data$pre_icu_los_days)
+
+# Realizar o teste de Mann-Whitney U para a variável 'weight'
+wilcox.test(outlier_data$weight, test_data$weight)
+
+# Realizar o teste de Mann-Whitney U para a variável 'albumin_apache'
+wilcox.test(outlier_data$albumin_apache, test_data$albumin_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'bilirubin_apache'
+wilcox.test(outlier_data$bilirubin_apache, test_data$bilirubin_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'bun_apache'
+wilcox.test(outlier_data$bun_apache, test_data$bun_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'creatinine_apache'
+wilcox.test(outlier_data$creatinine_apache, test_data$creatinine_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'fio2_apache'
+wilcox.test(outlier_data$fio2_apache, test_data$fio2_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_eyes_apache'
+wilcox.test(outlier_data$gcs_eyes_apache, test_data$gcs_eyes_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_motor_apache'
+wilcox.test(outlier_data$gcs_motor_apache, test_data$gcs_motor_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_uble_apache'
+wilcox.test(outlier_data$gcs_uble_apache, test_data$gcs_uble_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_verbal_apache'
+wilcox.test(outlier_data$gcs_verbal_apache, test_data$gcs_verbal_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'glucose_apache'
+wilcox.test(outlier_data$glucose_apache, test_data$glucose_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'heart_rate_apache'
+wilcox.test(outlier_data$heart_rate_apache, test_data$heart_rate_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'hematocrit_apache'
+wilcox.test(outlier_data$hematocrit_apache, test_data$hematocrit_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'intubated_apache'
+wilcox.test(outlier_data$intubated_apache, test_data$intubated_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'map_apache'
+wilcox.test(outlier_data$map_apache, test_data$map_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'resprate_apache'
+wilcox.test(outlier_data$resprate_apache, test_data$resprate_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'sodium_apache'
+wilcox.test(outlier_data$sodium_apache, test_data$sodium_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'temp_apache'
+wilcox.test(outlier_data$temp_apache, test_data$temp_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'urineoutput_apache'
+wilcox.test(outlier_data$urineoutput_apache, test_data$urineoutput_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'ventilated_apache'
+wilcox.test(outlier_data$ventilated_apache, test_data$ventilated_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'wbc_apache'
+wilcox.test(outlier_data$wbc_apache, test_data$wbc_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'aids'
+wilcox.test(outlier_data$aids, test_data$aids)
+
+# Realizar o teste de Mann-Whitney U para a variável 'cirrhosis'
+wilcox.test(outlier_data$cirrhosis, test_data$cirrhosis)
+
+# Realizar o teste de Mann-Whitney U para a variável 'diabetes_mellitus'
+wilcox.test(outlier_data$diabetes_mellitus, test_data$diabetes_mellitus)
+
+# Realizar o teste de Mann-Whitney U para a variável 'hepatic_failure'
+wilcox.test(outlier_data$hepatic_failure, test_data$hepatic_failure)
+
+# Realizar o teste de Mann-Whitney U para a variável 'immunosuppression'
+wilcox.test(outlier_data$immunosuppression, test_data$immunosuppression)
+
+# Realizar o teste de Mann-Whitney U para a variável 'leukemia'
+wilcox.test(outlier_data$leukemia, test_data$leukemia)
+
+# Realizar o teste de Mann-Whitney U para a variável 'lymphoma'
+wilcox.test(outlier_data$lymphoma, test_data$lymphoma)
+
+# Realizar o teste de Mann-Whitney U para a variável 'solid_tumor_with_metastasis'
+wilcox.test(outlier_data$solid_tumor_with_metastasis, test_data$solid_tumor_with_metastasis)
+
+
+
+```
+
+
+```{r}
+# Calculando medidas de resumo para cada grupo
+
+# ICU LOS (Dias de internação na UTI)
+mean_icu_los_outlier <- mean(outlier_data$icu_los_days)
+mean_icu_los_test <- mean(test_data$icu_los_days)
+sd_icu_los_outlier <- sd(outlier_data$icu_los_days)
+sd_icu_los_test <- sd(test_data$icu_los_days)
+
+# FiO2 (APACHE II)
+median_fio2_outlier <- median(outlier_data$fio2_apache)
+median_fio2_test <- median(test_data$fio2_apache)
+iqr_fio2_outlier <- IQR(outlier_data$fio2_apache)
+iqr_fio2_test <- IQR(test_data$fio2_apache)
+
+# Motor (APACHE II)
+median_motor_outlier <- median(outlier_data$gcs_motor_apache)
+median_motor_test <- median(test_data$gcs_motor_apache)
+iqr_motor_outlier <- IQR(outlier_data$gcs_motor_apache)
+iqr_motor_test <- IQR(test_data$gcs_motor_apache)
+
+# Intubated (APACHE II)
+prop_intubated_outlier <- sum(outlier_data$intubated_apache == 1) / length(outlier_data$intubated_apache)
+prop_intubated_test <- sum(test_data$intubated_apache == 1) / length(test_data$intubated_apache)
+
+# Sodium (APACHE II)
+mean_sodium_outlier <- mean(outlier_data$sodium_apache)
+mean_sodium_test <- mean(test_data$sodium_apache)
+sd_sodium_outlier <- sd(outlier_data$sodium_apache)
+sd_sodium_test <- sd(test_data$sodium_apache)
+
+# Ventilated (APACHE II)
+prop_ventilated_outlier <- sum(outlier_data$ventilated_apache == 1) / length(outlier_data$ventilated_apache)
+prop_ventilated_test <- sum(test_data$ventilated_apache == 1) / length(test_data$ventilated_apache)
+
+# Comparando as diferenças entre os grupos
+cat("ICU LOS (Dias de internação na UTI):\n")
+cat("Média do grupo outlier:", mean_icu_los_outlier, "\n")
+cat("Média do grupo test:", mean_icu_los_test, "\n")
+cat("Desvio padrão do grupo outlier:", sd_icu_los_outlier, "\n")
+cat("Desvio padrão do grupo test:", sd_icu_los_test, "\n\n")
+
+cat("FiO2 (APACHE II):\n")
+cat("Mediana do grupo outlier:", median_fio2_outlier, "\n")
+cat("Mediana do grupo test:", median_fio2_test, "\n")
+cat("IQR do grupo outlier:", iqr_fio2_outlier, "\n")
+cat("IQR do grupo test:", iqr_fio2_test, "\n\n")
+
+cat("Motor (APACHE II):\n")
+cat("Mediana do grupo outlier:", median_motor_outlier, "\n")
+cat("Mediana do grupo test:", median_motor_test, "\n")
+cat("IQR do grupo outlier:", iqr_motor_outlier, "\n")
+cat("IQR do grupo test:", iqr_motor_test, "\n\n")
+
+cat("Intubated (APACHE II):\n")
+cat("Proporção de pacientes intubados no grupo outlier:", prop_intubated_outlier, "\n")
+cat("Proporção de pacientes intubados no grupo test:", prop_intubated_test, "\n\n")
+
+cat("Sodium (APACHE II):\n")
+cat("Média do grupo outlier:", mean_sodium_outlier, "\n")
+cat("Média do grupo test:", mean_sodium_test, "\n")
+cat("Desvio padrão do grupo outlier:", sd_sodium_outlier, "\n")
+cat("Desvio padrão do grupo test:", sd_sodium_test, "\n\n")
+
+cat("Ventilated (APACHE II):\n")
+cat("Proporção de pacientes ventilados no grupo outlier:", prop_ventilated_outlier, "\n")
+cat("Proporção de pacientes ventilados no grupo test:", prop_ventilated_test, "\n")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
