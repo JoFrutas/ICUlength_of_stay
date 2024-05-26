@@ -18,6 +18,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 
+
 ```{r}
 
 rm(list = ls())
@@ -223,6 +224,42 @@ print("outlier_table")
 
 ```
 
+```{r}
+library(kableExtra)
+library(magrittr) # para o operador pipe '%>%'
+
+# Supondo que os dados da tabela estejam disponíveis em 'outlier_data'
+# Criar uma legenda para a tabela
+table_caption <- "Casos com Estadia na UTI Desviando 120% das Previsões"
+
+# Criar a tabela usando kableExtra com opções de formatação desejadas
+outlier_table <- kable(outlier_data, caption = table_caption, booktabs = TRUE, row.names = FALSE, 
+                       align = "c") %>%  # Alinhar conteúdo ao centro
+                   kable_styling(full_width = F, # Ajustar largura da tabela
+                                 font_size = 10, # Ajustar tamanho da fonte
+                                 position = "center") # Centralizar a tabela na página
+
+library(kableExtra)
+library(magrittr) # para o operador pipe '%>%'
+
+library(webshot)
+
+# Supondo que 'outlier_table' seja o seu objeto de tabela já criado com kable e kableExtra
+# Primeiro, crie um arquivo HTML temporário da tabela
+temp_file <- tempfile(fileext = ".html")
+outlier_table %>% 
+  save_kable(file = temp_file)
+
+# Agora, use a função 'webshot' para salvar a tabela como uma imagem PNG
+webshot::webshot(temp_file, 
+                 file = "outlier_table.png", 
+                 zoom = 2)
+
+
+```
+
+
+
 
 ```{r}
 # Find indices of cases exceeding the threshold
@@ -403,104 +440,485 @@ wilcox.test(outlier_data$solid_tumor_with_metastasis, test_data$solid_tumor_with
 
 
 ```{r}
-# Calculando medidas de resumo para cada grupo
+# Realizar o teste de Mann-Whitney U para lower_predicted vs test_data
 
-# ICU LOS (Dias de internação na UTI)
-mean_icu_los_outlier <- mean(outlier_data$icu_los_days)
-mean_icu_los_test <- mean(test_data$icu_los_days)
-sd_icu_los_outlier <- sd(outlier_data$icu_los_days)
-sd_icu_los_test <- sd(test_data$icu_los_days)
+# Realizar o teste de Mann-Whitney U para a variável 'age'
+wilcox.test(lower_predicted$age, test_data$age)
 
-# FiO2 (APACHE II)
-median_fio2_outlier <- median(outlier_data$fio2_apache)
-median_fio2_test <- median(test_data$fio2_apache)
-iqr_fio2_outlier <- IQR(outlier_data$fio2_apache)
-iqr_fio2_test <- IQR(test_data$fio2_apache)
+# Realizar o teste de Mann-Whitney U para a variável 'icu_los_days'
+wilcox.test(lower_predicted$icu_los_days, test_data$icu_los_days)
 
-# Motor (APACHE II)
-median_motor_outlier <- median(outlier_data$gcs_motor_apache)
-median_motor_test <- median(test_data$gcs_motor_apache)
-iqr_motor_outlier <- IQR(outlier_data$gcs_motor_apache)
-iqr_motor_test <- IQR(test_data$gcs_motor_apache)
+# Realizar o teste de Mann-Whitney U para a variável 'elective_surgery'
+wilcox.test(lower_predicted$elective_surgery, test_data$elective_surgery)
 
-# Intubated (APACHE II)
-prop_intubated_outlier <- sum(outlier_data$intubated_apache == 1) / length(outlier_data$intubated_apache)
-prop_intubated_test <- sum(test_data$intubated_apache == 1) / length(test_data$intubated_apache)
+# Realizar o teste de Mann-Whitney U para a variável 'gender'
+wilcox.test(lower_predicted$gender, test_data$gender)
 
-# Sodium (APACHE II)
-mean_sodium_outlier <- mean(outlier_data$sodium_apache)
-mean_sodium_test <- mean(test_data$sodium_apache)
-sd_sodium_outlier <- sd(outlier_data$sodium_apache)
-sd_sodium_test <- sd(test_data$sodium_apache)
+# Realizar o teste de Mann-Whitney U para a variável 'pre_icu_los_days'
+wilcox.test(lower_predicted$pre_icu_los_days, test_data$pre_icu_los_days)
 
-# Ventilated (APACHE II)
-prop_ventilated_outlier <- sum(outlier_data$ventilated_apache == 1) / length(outlier_data$ventilated_apache)
-prop_ventilated_test <- sum(test_data$ventilated_apache == 1) / length(test_data$ventilated_apache)
+# Realizar o teste de Mann-Whitney U para a variável 'weight'
+wilcox.test(lower_predicted$weight, test_data$weight)
 
-# Comparando as diferenças entre os grupos
-cat("ICU LOS (Dias de internação na UTI):\n")
-cat("Média do grupo outlier:", mean_icu_los_outlier, "\n")
-cat("Média do grupo test:", mean_icu_los_test, "\n")
-cat("Desvio padrão do grupo outlier:", sd_icu_los_outlier, "\n")
-cat("Desvio padrão do grupo test:", sd_icu_los_test, "\n\n")
+# Realizar o teste de Mann-Whitney U para a variável 'albumin_apache'
+wilcox.test(lower_predicted$albumin_apache, test_data$albumin_apache)
 
-cat("FiO2 (APACHE II):\n")
-cat("Mediana do grupo outlier:", median_fio2_outlier, "\n")
-cat("Mediana do grupo test:", median_fio2_test, "\n")
-cat("IQR do grupo outlier:", iqr_fio2_outlier, "\n")
-cat("IQR do grupo test:", iqr_fio2_test, "\n\n")
+# Realizar o teste de Mann-Whitney U para a variável 'bilirubin_apache'
+wilcox.test(lower_predicted$bilirubin_apache, test_data$bilirubin_apache)
 
-cat("Motor (APACHE II):\n")
-cat("Mediana do grupo outlier:", median_motor_outlier, "\n")
-cat("Mediana do grupo test:", median_motor_test, "\n")
-cat("IQR do grupo outlier:", iqr_motor_outlier, "\n")
-cat("IQR do grupo test:", iqr_motor_test, "\n\n")
+# Realizar o teste de Mann-Whitney U para a variável 'bun_apache'
+wilcox.test(lower_predicted$bun_apache, test_data$bun_apache)
 
-cat("Intubated (APACHE II):\n")
-cat("Proporção de pacientes intubados no grupo outlier:", prop_intubated_outlier, "\n")
-cat("Proporção de pacientes intubados no grupo test:", prop_intubated_test, "\n\n")
+# Realizar o teste de Mann-Whitney U para a variável 'creatinine_apache'
+wilcox.test(lower_predicted$creatinine_apache, test_data$creatinine_apache)
 
-cat("Sodium (APACHE II):\n")
-cat("Média do grupo outlier:", mean_sodium_outlier, "\n")
-cat("Média do grupo test:", mean_sodium_test, "\n")
-cat("Desvio padrão do grupo outlier:", sd_sodium_outlier, "\n")
-cat("Desvio padrão do grupo test:", sd_sodium_test, "\n\n")
+# Realizar o teste de Mann-Whitney U para a variável 'fio2_apache'
+wilcox.test(lower_predicted$fio2_apache, test_data$fio2_apache)
 
-cat("Ventilated (APACHE II):\n")
-cat("Proporção de pacientes ventilados no grupo outlier:", prop_ventilated_outlier, "\n")
-cat("Proporção de pacientes ventilados no grupo test:", prop_ventilated_test, "\n")
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_eyes_apache'
+wilcox.test(lower_predicted$gcs_eyes_apache, test_data$gcs_eyes_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_motor_apache'
+wilcox.test(lower_predicted$gcs_motor_apache, test_data$gcs_motor_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_uble_apache'
+wilcox.test(lower_predicted$gcs_uble_apache, test_data$gcs_uble_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_verbal_apache'
+wilcox.test(lower_predicted$gcs_verbal_apache, test_data$gcs_verbal_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'glucose_apache'
+wilcox.test(lower_predicted$glucose_apache, test_data$glucose_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'heart_rate_apache'
+wilcox.test(lower_predicted$heart_rate_apache, test_data$heart_rate_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'hematocrit_apache'
+wilcox.test(lower_predicted$hematocrit_apache, test_data$hematocrit_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'intubated_apache'
+wilcox.test(lower_predicted$intubated_apache, test_data$intubated_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'map_apache'
+wilcox.test(lower_predicted$map_apache, test_data$map_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'resprate_apache'
+wilcox.test(lower_predicted$resprate_apache, test_data$resprate_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'sodium_apache'
+wilcox.test(lower_predicted$sodium_apache, test_data$sodium_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'temp_apache'
+wilcox.test(lower_predicted$temp_apache, test_data$temp_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'urineoutput_apache'
+wilcox.test(lower_predicted$urineoutput_apache, test_data$urineoutput_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'ventilated_apache'
+wilcox.test(lower_predicted$ventilated_apache, test_data$ventilated_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'wbc_apache'
+wilcox.test(lower_predicted$wbc_apache, test_data$wbc_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'aids'
+wilcox.test(lower_predicted$aids, test_data$aids)
+
+# Realizar o teste de Mann-Whitney U para a variável 'cirrhosis'
+wilcox.test(lower_predicted$cirrhosis, test_data$cirrhosis)
+
+# Realizar o teste de Mann-Whitney U para a variável 'diabetes_mellitus'
+wilcox.test(lower_predicted$diabetes_mellitus, test_data$diabetes_mellitus)
+
+# Realizar o teste de Mann-Whitney U para a variável 'hepatic_failure'
+wilcox.test(lower_predicted$hepatic_failure, test_data$hepatic_failure)
+
+# Realizar o teste de Mann-Whitney U para a variável 'immunosuppression'
+wilcox.test(lower_predicted$immunosuppression, test_data$immunosuppression)
+
+# Realizar o teste de Mann-Whitney U para a variável 'leukemia'
+wilcox.test(lower_predicted$leukemia, test_data$leukemia)
+
+# Realizar o teste de Mann-Whitney U para a variável 'lymphoma'
+wilcox.test(lower_predicted$lymphoma, test_data$lymphoma)
+
+# Realizar o teste de Mann-Whitney U para a variável 'solid_tumor_with_metastasis'
+wilcox.test(lower_predicted$solid_tumor_with_metastasis, test_data$solid_tumor_with_metastasis)
+
+```
+
+```{r}
+
+
+# Realizar o teste de Mann-Whitney U para higher_predicted vs test_data
+
+# Realizar o teste de Mann-Whitney U para a variável 'age'
+wilcox.test(higher_predicted$age, test_data$age)
+
+# Realizar o teste de Mann-Whitney U para a variável 'icu_los_days'
+wilcox.test(higher_predicted$icu_los_days, test_data$icu_los_days)
+
+# Realizar o teste de Mann-Whitney U para a variável 'elective_surgery'
+wilcox.test(higher_predicted$elective_surgery, test_data$elective_surgery)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gender'
+wilcox.test(higher_predicted$gender, test_data$gender)
+
+# Realizar o teste de Mann-Whitney U para a variável 'pre_icu_los_days'
+wilcox.test(higher_predicted$pre_icu_los_days, test_data$pre_icu_los_days)
+
+# Realizar o teste de Mann-Whitney U para a variável 'weight'
+wilcox.test(higher_predicted$weight, test_data$weight)
+
+# Realizar o teste de Mann-Whitney U para a variável 'albumin_apache'
+wilcox.test(higher_predicted$albumin_apache, test_data$albumin_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'bilirubin_apache'
+wilcox.test(higher_predicted$bilirubin_apache, test_data$bilirubin_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'bun_apache'
+wilcox.test(higher_predicted$bun_apache, test_data$bun_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'creatinine_apache'
+wilcox.test(higher_predicted$creatinine_apache, test_data$creatinine_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'fio2_apache'
+wilcox.test(higher_predicted$fio2_apache, test_data$fio2_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_eyes_apache'
+wilcox.test(higher_predicted$gcs_eyes_apache, test_data$gcs_eyes_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_motor_apache'
+wilcox.test(higher_predicted$gcs_motor_apache, test_data$gcs_motor_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_uble_apache'
+wilcox.test(higher_predicted$gcs_uble_apache, test_data$gcs_uble_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'gcs_verbal_apache'
+wilcox.test(higher_predicted$gcs_verbal_apache, test_data$gcs_verbal_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'glucose_apache'
+wilcox.test(higher_predicted$glucose_apache, test_data$glucose_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'heart_rate_apache'
+wilcox.test(higher_predicted$heart_rate_apache, test_data$heart_rate_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'hematocrit_apache'
+wilcox.test(higher_predicted$hematocrit_apache, test_data$hematocrit_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'intubated_apache'
+wilcox.test(higher_predicted$intubated_apache, test_data$intubated_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'map_apache'
+wilcox.test(higher_predicted$map_apache, test_data$map_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'resprate_apache'
+wilcox.test(higher_predicted$resprate_apache, test_data$resprate_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'sodium_apache'
+wilcox.test(higher_predicted$sodium_apache, test_data$sodium_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'temp_apache'
+wilcox.test(higher_predicted$temp_apache, test_data$temp_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'urineoutput_apache'
+wilcox.test(higher_predicted$urineoutput_apache, test_data$urineoutput_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'ventilated_apache'
+wilcox.test(higher_predicted$ventilated_apache, test_data$ventilated_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'wbc_apache'
+wilcox.test(higher_predicted$wbc_apache, test_data$wbc_apache)
+
+# Realizar o teste de Mann-Whitney U para a variável 'aids'
+wilcox.test(higher_predicted$aids, test_data$aids)
+
+# Realizar o teste de Mann-Whitney U para a variável 'cirrhosis'
+wilcox.test(higher_predicted$cirrhosis, test_data$cirrhosis)
+
+# Realizar o teste de Mann-Whitney U para a variável 'diabetes_mellitus'
+wilcox.test(higher_predicted$diabetes_mellitus, test_data$diabetes_mellitus)
+
+# Realizar o teste de Mann-Whitney U para a variável 'hepatic_failure'
+wilcox.test(higher_predicted$hepatic_failure, test_data$hepatic_failure)
+
+# Realizar o teste de Mann-Whitney U para a variável 'immunosuppression'
+wilcox.test(higher_predicted$immunosuppression, test_data$immunosuppression)
+
+# Realizar o teste de Mann-Whitney U para a variável 'leukemia'
+wilcox.test(higher_predicted$leukemia, test_data$leukemia)
+
+# Realizar o teste de Mann-Whitney U para a variável 'lymphoma'
+wilcox.test(higher_predicted$lymphoma, test_data$lymphoma)
+
+# Realizar o teste de Mann-Whitney U para a variável 'solid_tumor_with_metastasis'
+wilcox.test(higher_predicted$solid_tumor_with_metastasis, test_data$solid_tumor_with_metastasis)
+
+```
+```{r}
+# Definir um nível de significância
+alpha <- 0.05
+
+# Função para realizar o teste de Mann-Whitney U e verificar significância
+test_significance <- function(var1, var2, var_name) {
+  # Remover valores NA
+  var1 <- na.omit(var1)
+  var2 <- na.omit(var2)
+  
+  # Realizar o teste apenas se ambas as variáveis tiverem valores
+  if (length(var1) > 0 & length(var2) > 0) {
+    test <- wilcox.test(var1, var2)
+    p_value <- test$p.value
+    if (!is.na(p_value) && p_value < alpha) {
+      return(var_name)
+    }
+  }
+  return(NULL)
+}
+
+# Listas para armazenar variáveis com diferenças significativas
+significant_vars_lower <- c()
+significant_vars_higher <- c()
+
+# Variáveis a serem testadas
+variables <- c("age", "icu_los_days", "elective_surgery", "gender", "pre_icu_los_days",
+               "weight", "albumin_apache", "bilirubin_apache", "bun_apache", "creatinine_apache",
+               "fio2_apache", "gcs_eyes_apache", "gcs_motor_apache", "gcs_uble_apache", 
+               "gcs_verbal_apache", "glucose_apache", "heart_rate_apache", "hematocrit_apache",
+               "intubated_apache", "map_apache", "resprate_apache", "sodium_apache", "temp_apache",
+               "urineoutput_apache", "ventilated_apache", "wbc_apache", "aids", "cirrhosis",
+               "diabetes_mellitus", "hepatic_failure", "immunosuppression", "leukemia", "lymphoma",
+               "solid_tumor_with_metastasis")
+
+# Comparar lower_predicted com test_data
+for (var in variables) {
+  var1 <- lower_predicted[[var]]
+  var2 <- test_data[[var]]
+  significant_var <- test_significance(var1, var2, var)
+  if (!is.null(significant_var)) {
+    significant_vars_lower <- c(significant_vars_lower, significant_var)
+  }
+}
+
+# Comparar higher_predicted com test_data
+for (var in variables) {
+  var1 <- higher_predicted[[var]]
+  var2 <- test_data[[var]]
+  significant_var <- test_significance(var1, var2, var)
+  if (!is.null(significant_var)) {
+    significant_vars_higher <- c(significant_vars_higher, significant_var)
+  }
+}
+
+# Imprimir variáveis com diferenças significativas
+cat("Variáveis com diferenças significativas entre lower_predicted e test_data:\n")
+print(significant_vars_lower)
+
+cat("\nVariáveis com diferenças significativas entre higher_predicted e test_data:\n")
+print(significant_vars_higher)
+
+
+```
+
+```{r}
+# Definir um nível de significância
+alpha <- 0.05
+
+# Função para realizar o teste t de Student e verificar significância
+test_mean_difference <- function(var1, var2, var_name) {
+  # Remover valores NA
+  var1 <- na.omit(var1)
+  var2 <- na.omit(var2)
+  
+  # Realizar o teste apenas se ambas as variáveis tiverem valores
+  if (length(var1) > 0 & length(var2) > 0) {
+    # Teste de normalidade
+    shapiro_var1 <- shapiro.test(var1)$p.value
+    shapiro_var2 <- shapiro.test(var2)$p.value
+    
+    # Se ambos os grupos passarem no teste de normalidade, usar teste t de Student
+    if (shapiro_var1 > alpha & shapiro_var2 > alpha) {
+      test <- t.test(var1, var2)
+      p_value <- test$p.value
+      if (!is.na(p_value) && p_value < alpha) {
+        return(var_name)
+      }
+    } else {
+      # Se não passarem, usar teste de Mann-Whitney U
+      test <- wilcox.test(var1, var2)
+      p_value <- test$p.value
+      if (!is.na(p_value) && p_value < alpha) {
+        return(var_name)
+      }
+    }
+  }
+  return(NULL)
+}
+
+# Listas para armazenar variáveis com diferenças significativas nas médias
+significant_vars_mean_lower <- c()
+significant_vars_mean_higher <- c()
+
+# Variáveis a serem testadas
+variables <- c("icu_los_days", "weight", "intubated_apache", "bun_apache", 
+               "creatinine_apache", "fio2_apache", "wbc_apache")
+
+# Comparar lower_predicted com test_data
+for (var in variables) {
+  var1 <- lower_predicted[[var]]
+  var2 <- test_data[[var]]
+  significant_var <- test_mean_difference(var1, var2, var)
+  if (!is.null(significant_var)) {
+    significant_vars_mean_lower <- c(significant_vars_mean_lower, significant_var)
+  }
+}
+
+# Comparar higher_predicted com test_data
+for (var in variables) {
+  var1 <- higher_predicted[[var]]
+  var2 <- test_data[[var]]
+  significant_var <- test_mean_difference(var1, var2, var)
+  if (!is.null(significant_var)) {
+    significant_vars_mean_higher <- c(significant_vars_mean_higher, significant_var)
+  }
+}
+
+# Imprimir variáveis com diferenças significativas nas médias
+cat("Variáveis com diferenças significativas nas médias entre lower_predicted e test_data:\n")
+print(significant_vars_mean_lower)
+
+cat("\nVariáveis com diferenças significativas nas médias entre higher_predicted e test_data:\n")
+print(significant_vars_mean_higher)
 
 ```
 
 
 
 
+```{r}
+# Definir um nível de significância
+alpha <- 0.05
+
+# Função para realizar o teste t de Student e verificar significância
+test_mean_difference <- function(var1, var2, var_name) {
+  # Remover valores NA
+  var1 <- na.omit(var1)
+  var2 <- na.omit(var2)
+  
+  # Realizar o teste apenas se ambas as variáveis tiverem valores
+  if (length(var1) > 0 & length(var2) > 0) {
+    # Teste de normalidade
+    shapiro_var1 <- shapiro.test(var1)$p.value
+    shapiro_var2 <- shapiro.test(var2)$p.value
+    
+    # Se ambos os grupos passarem no teste de normalidade, usar teste t de Student
+    if (shapiro_var1 > alpha & shapiro_var2 > alpha) {
+      test <- t.test(var1, var2)
+      p_value <- test$p.value
+      if (!is.na(p_value) && p_value < alpha) {
+        return(list(var_name = var_name, test = "t-test", p_value = p_value))
+      }
+    } else {
+      # Se não passarem, usar teste de Mann-Whitney U
+      test <- wilcox.test(var1, var2)
+      p_value <- test$p.value
+      if (!is.na(p_value) && p_value < alpha) {
+        return(list(var_name = var_name, test = "Mann-Whitney U", p_value = p_value))
+      }
+    }
+  }
+  return(NULL)
+}
+
+# Função para calcular as médias
+calculate_means <- function(var1, var2) {
+  mean_var1 <- mean(var1, na.rm = TRUE)
+  mean_var2 <- mean(var2, na.rm = TRUE)
+  return(c(mean_var1, mean_var2))
+}
+
+# Inicializar listas para armazenar resultados
+results_lower <- list()
+results_higher <- list()
+
+# Variáveis a serem testadas
+variables <- c("icu_los_days", "weight", "intubated_apache", "bun_apache", 
+               "creatinine_apache", "fio2_apache", "wbc_apache")
+
+# Comparar lower_predicted com test_data
+for (var in variables) {
+  var1 <- lower_predicted[[var]]
+  var2 <- test_data[[var]]
+  significant_var <- test_mean_difference(var1, var2, var)
+  if (!is.null(significant_var)) {
+    means <- calculate_means(var1, var2)
+    results_lower <- rbind(results_lower, c(significant_var$var_name, significant_var$test, significant_var$p_value, means[1], means[2]))
+  }
+}
+
+# Comparar higher_predicted com test_data
+for (var in variables) {
+  var1 <- higher_predicted[[var]]
+  var2 <- test_data[[var]]
+  significant_var <- test_mean_difference(var1, var2, var)
+  if (!is.null(significant_var)) {
+    means <- calculate_means(var1, var2)
+    results_higher <- rbind(results_higher, c(significant_var$var_name, significant_var$test, significant_var$p_value, means[1], means[2]))
+  }
+}
+
+# Converter resultados para data frames e adicionar nomes das colunas
+results_lower <- as.data.frame(results_lower)
+colnames(results_lower) <- c("Variable", "Test", "p-value", "Mean Lower Predicted", "Mean Test Data")
+
+results_higher <- as.data.frame(results_higher)
+colnames(results_higher) <- c("Variable", "Test", "p-value", "Mean Higher Predicted", "Mean Test Data")
+
+# Imprimir resultados
+cat("Comparação entre lower_predicted e test_data:\n")
+print(results_lower)
+
+cat("\nComparação entre higher_predicted e test_data:\n")
+print(results_higher)
+
+```
+```{r}
+
+# Converter resultados para data frames e adicionar nomes das colunas
+results_lower <- as.data.frame(results_lower)
+colnames(results_lower) <- c("Variable", "Test", "p-value", "Mean Lower Predicted", "Mean Test Data")
+
+results_higher <- as.data.frame(results_higher)
+colnames(results_higher) <- c("Variable", "Test", "p-value", "Mean Higher Predicted", "Mean Test Data")
+
+# Imprimir resultados em tabelas formatadas
+cat("Comparação entre lower_predicted e test_data:\n")
+kable(results_lower, format = "html", col.names = c("Variable", "Test", "p-value", "Mean Lower Predicted", "Mean Test Data")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F) %>%
+  add_header_above(c(" " = 1, "Statistical Test" = 1, "Significance" = 1, "Group Means" = 2))
+
+cat("\nComparação entre higher_predicted e test_data:\n")
+kable(results_higher, format = "html", col.names = c("Variable", "Test", "p-value", "Mean Higher Predicted", "Mean Test Data")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F) %>%
+  add_header_above(c(" " = 1, "Statistical Test" = 1, "Significance" = 1, "Group Means" = 2))
+```
 
 
 
+```{r}
+# Salvar tabelas como imagens
+save_kable(results_lower, "results_lower.png")
+save_kable(results_higher, "results_higher.png")
+```
+```{r}
+# Salvar tabelas como imagens
+png("results_lower.png", width = 800, height = 600, units = "px", res = 150)
+print(kable(results_lower, format = "html", col.names = c("Variable", "Test", "p-value", "Mean Lower Predicted", "Mean Test Data")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F) %>%
+  add_header_above(c(" " = 1, "Statistical Test" = 1, "Significance" = 1, "Group Means" = 2)))
+dev.off()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+png("results_higher.png", width = 800, height = 600, units = "px", res = 150)
+print(kable(results_higher, format = "html", col.names = c("Variable", "Test", "p-value", "Mean Higher Predicted", "Mean Test Data")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed", "responsive"), full_width = F) %>%
+  add_header_above(c(" " = 1, "Statistical Test" = 1, "Significance" = 1, "Group Means" = 2)))
+dev.off()
